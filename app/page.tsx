@@ -163,6 +163,7 @@ import FeaturesSection from "@/components/landing/features-section";
 import HowItWorksSection from "@/components/landing/how-it-works-section";
 import PricingSection from "@/components/landing/pricing-section";
 import TestimonialsSection from "@/components/landing/testimonials-section";
+import { BackgroundBeamsDemo } from "@/components/ui/Footer";
 
 export default function LandingPage() {
   return (
@@ -248,98 +249,9 @@ export default function LandingPage() {
         <TestimonialsSection />
       </main>
 
-      <footer className="bg-muted py-12 mt-20 transition-opacity duration-700">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Logo + Tagline */}
-            <div className="transition-transform duration-300 hover:scale-105">
-              <div className="flex items-center gap-2 mb-4">
-                <img
-                  src="/logo.png"
-                  alt="MeetScribe Logo"
-                  className="h-10 w-auto"
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Turn conversations into clarity with smart AI transcription.
-              </p>
-            </div>
+  
 
-            {/* Company Section */}
-            <div className="transition-transform duration-300 hover:scale-105">
-              <h3 className="font-medium mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link
-                    href="/about"
-                    className="hover:text-primary transition-colors"
-                  >
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/team"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Team
-                  </Link>
-                </li>
-                {/* <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li> */}
-              </ul>
-            </div>
-
-            {/* Support Section */}
-            <div className="transition-transform duration-300 hover:scale-105">
-              <h3 className="font-medium mb-4">Support</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link
-                    href="/help"
-                    className="hover:text-primary transition-colors"
-                  >
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/faqs"
-                    className="hover:text-primary transition-colors"
-                  >
-                    FAQs
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Newsletter */}
-            <div className="transition-transform duration-300 hover:scale-105">
-              <h3 className="font-medium mb-4">Newsletter</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Stay updated with our latest features and updates.
-              </p>
-              <form className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="px-4 py-2 rounded-md border text-sm w-full"
-                />
-                <button
-                  type="submit"
-                  className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors text-sm"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Bottom Line */}
-          <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>© 2025 MeetScribe. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <BackgroundBeamsDemo/>
     </div>
   );
 }
