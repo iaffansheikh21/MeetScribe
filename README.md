@@ -2,7 +2,7 @@
 
 **MeetScribe** is an AI-powered web application that automates the process of recording, transcribing, and summarizing client meetings. Using cutting-edge speech recognition, speaker identification, and large language models (LLMs), MeetScribe helps teams capture important discussions, extract project requirements, and generate actionable meeting minutes — all while ensuring secure, organized access to data.
 
-🔗 **Live at:** [https://meetscribe1-r7jq.vercel.app/](https://https://meetscribe1-r7jq.vercel.app/)
+🔗 **Live at:** [https://meetscribe1-r7jq.vercel.app/](https://meetscribe0.vercel.app/)
 
 ---
 
