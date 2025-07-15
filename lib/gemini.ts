@@ -1,32 +1,21 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import {
-  ChatGoogleGenerativeAI,
-  GoogleGenerativeAIEmbeddings,
-} from "@langchain/google-genai";
+import OpenAI from "openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 class GeminiService {
-  private genAI: GoogleGenerativeAI;
-  private chatModel: any;
-  private embeddingModel: GoogleGenerativeAIEmbeddings;
+  private openai: OpenAI;
+  private chatModel: string;
+  private embeddingModel: string;
 
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    // Initialize both the direct Google AI and LangChain clients
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.chatModel = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash",
-      apiKey: process.env.GEMINI_API_KEY,
-      temperature: 0.7,
-      maxOutputTokens: 2048,
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
-    this.embeddingModel = new GoogleGenerativeAIEmbeddings({
-      model: "text-embedding-004",
-      apiKey: process.env.GEMINI_API_KEY,
-    });
+    this.chatModel = "gpt-3.5-turbo"; // or "gpt-3.5-turbo"
+    this.embeddingModel = "text-embedding-3-small";
   }
 
   // Enhanced response generation with context and conversation history
@@ -52,21 +41,25 @@ Respond professionally with markdown formatting:
 **Bold** for emphasis`
         : "You are an AI assistant. No meeting context was provided.";
 
-      const messages = [
-        new SystemMessage(contextMessage),
-        ...conversationHistory.map((msg) =>
-          msg.role === "user"
-            ? new HumanMessage(msg.content)
-            : new SystemMessage(`Assistant: ${msg.content}`)
-        ),
-        new HumanMessage(userQuery),
+      const messages: any[] = [
+        { role: "system", content: contextMessage },
+        ...conversationHistory.map((msg) => ({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.content,
+        })),
+        { role: "user", content: userQuery },
       ];
 
-      const response = await this.chatModel.invoke(messages);
-      console.log(
-        `✅ Generated response (${response.content.toString().length} chars)`
-      );
-      return response.content.toString();
+      const response = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        messages,
+        temperature: 0.7,
+        max_tokens: 2048,
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+      console.log(`✅ Generated response (${content.length} chars)`);
+      return content;
     } catch (error) {
       console.error("Error generating response:", error);
       throw new Error(
@@ -80,7 +73,12 @@ Respond professionally with markdown formatting:
   // Embedding generation methods
   async generateEmbedding(text: string): Promise<number[]> {
     try {
-      return await this.embeddingModel.embedQuery(text);
+      const response = await this.openai.embeddings.create({
+        model: this.embeddingModel,
+        input: text,
+        dimensions: 768,
+      });
+      return response.data[0].embedding;
     } catch (error) {
       console.error("Error generating embedding:", error);
       throw new Error(
@@ -105,8 +103,12 @@ Respond professionally with markdown formatting:
           )}`
         );
 
-        const batchEmbeddings = await this.embeddingModel.embedDocuments(batch);
-        embeddings.push(...batchEmbeddings);
+        const response = await this.openai.embeddings.create({
+          model: this.embeddingModel,
+          input: batch,
+        });
+
+        embeddings.push(...response.data.map((item) => item.embedding));
 
         if (i + batchSize < texts.length) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -135,47 +137,33 @@ Respond professionally with markdown formatting:
     try {
       console.log("🤖 Generating comprehensive meeting summary...");
 
-      const summaryPrompt = `Analyze this meeting transcript and provide:
-
-# Meeting Summary
-
-## Key Discussion Points
-- List 3-5 main topics with brief explanations
-
-## Decisions Made
-- Clear list of decisions with stakeholders if mentioned
-
-## Action Items
-- Format as: **Assignee**: Task (Due: date if available)
-- Extract all concrete next steps
-
-## Important Notes
-- Any critical information worth highlighting
+      const summaryPrompt = `Analyze this meeting transcript and provide structured output as JSON with these exact fields:
+{
+  "keyPoints": ["list of 3-5 main topics"],
+  "actionItems": [{"assignee": "name", "task": "description", "dueDate": "date if available"}],
+  "decisions": ["list of decisions made"],
+  "fullSummary": "complete formatted summary text"
+}
 
 **Transcript:**
-${transcriptText}
+${transcriptText}`;
 
-Return as JSON with these exact fields:
-{
-  "keyPoints": [],
-  "actionItems": [{"assignee": "", "task": "", "dueDate": ""}],
-  "decisions": [],
-  "fullSummary": "Complete formatted summary text"
-}`;
-
-      // Using direct Google AI for better JSON response
-      const model = this.genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-        },
+      const response = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert at summarizing meetings with structured output.",
+          },
+          { role: "user", content: summaryPrompt },
+        ],
       });
 
-      const result = await model.generateContent(summaryPrompt);
-      const response = await result.response;
-
       try {
-        const summary = JSON.parse(response.text());
+        const content = response.choices[0]?.message?.content || "{}";
+        const summary = JSON.parse(content);
         return {
           keyPoints: summary.keyPoints || [],
           actionItems: summary.actionItems || [],
@@ -195,17 +183,22 @@ Return as JSON with these exact fields:
   private async fallbackSummaryGeneration(transcriptText: string) {
     console.log("🔄 Falling back to simpler summary generation");
     try {
-      const response = await this.chatModel.invoke([
-        new HumanMessage(
-          `Summarize this meeting transcript briefly:\n\n${transcriptText}`
-        ),
-      ]);
+      const response = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        messages: [
+          {
+            role: "user",
+            content: `Summarize this meeting transcript briefly:\n\n${transcriptText}`,
+          },
+        ],
+      });
 
       return {
         keyPoints: ["Summary generated"],
         actionItems: [],
         decisions: [],
-        fullSummary: response.content.toString(),
+        fullSummary:
+          response.choices[0]?.message?.content || "No summary generated",
       };
     } catch (fallbackError) {
       console.error("Fallback summary failed:", fallbackError);
@@ -233,14 +226,19 @@ ${transcript}
 
 Return ONLY the action items as a bulleted list. If none, return "No action items found".`;
 
-      const response = await this.chatModel.invoke([
-        new SystemMessage(
-          "You are an expert at extracting concrete action items from meetings."
-        ),
-        new HumanMessage(prompt),
-      ]);
+      const response = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert at extracting concrete action items from meetings.",
+          },
+          { role: "user", content: prompt },
+        ],
+      });
 
-      const content = response.content.toString();
+      const content = response.choices[0]?.message?.content || "";
       if (content.includes("No action items found")) return [];
 
       return content
@@ -255,4 +253,5 @@ Return ONLY the action items as a bulleted list. If none, return "No action item
   }
 }
 
+// Maintain the exact same export name
 export const geminiService = new GeminiService();
