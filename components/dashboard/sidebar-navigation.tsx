@@ -56,7 +56,7 @@ export default function SidebarNavigation({ user }: SidebarNavigationProps) {
     { name: "Transcriptions", href: "/dashboard/transcriptions", icon: FileText },
     { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Team", href: "/dashboard/team", icon: Users },
+    { name: "Team", href: "/team", icon: Users },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
