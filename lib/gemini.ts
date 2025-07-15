@@ -106,6 +106,7 @@ Respond professionally with markdown formatting:
         const response = await this.openai.embeddings.create({
           model: this.embeddingModel,
           input: batch,
+          dimensions: 768,
         });
 
         embeddings.push(...response.data.map((item) => item.embedding));
